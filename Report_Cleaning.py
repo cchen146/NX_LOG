@@ -1,10 +1,11 @@
 import ctypes  # An included library with Python install.
 import csv
 import datetime
+import glob
 import openpyxl
 from openpyxl.styles import PatternFill
 from openpyxl.utils import get_column_letter
-import psycopg2
+import os
 
 import Column_Cleaning
 
@@ -155,11 +156,15 @@ def clean_report(file_name, fw, fields_categories, sheet_name):
     return raw_data
 
 
-def truncate_n_update_tb(db, tb, raw_data, upload_sql):
-    con = psycopg2.connect(db)
-    cur = con.cursor()
-    cur.execute("truncate table {}".format(tb))
-    sql = upload_sql.format(tb)
-    cur.execute(sql, raw_data)
-    con.commit()
-    con.close()
+def get_latest_file(file_name, *args, **kwargs):
+    input_file_name = max(glob.iglob(file_name), key=os.path.getctime)
+    return input_file_name
+
+def copy_file_without_last_line_csv(input_file, clean_file, *args, **kwargs):
+    input_file_name = get_latest_file(input_file)
+    f = open(input_file_name, encoding='utf-8')
+    lines = f.readlines()
+    lines = lines[:-1]
+    f.close()
+    with open(clean_file, 'w', encoding='utf-8') as nf:
+        nf.writelines(lines)
