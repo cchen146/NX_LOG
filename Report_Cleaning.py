@@ -1,10 +1,11 @@
 import ctypes  # An included library with Python install.
 import csv
 import datetime
+import glob
 import openpyxl
 from openpyxl.styles import PatternFill
 from openpyxl.utils import get_column_letter
-import psycopg2
+import os
 
 import Column_Cleaning
 
@@ -56,7 +57,6 @@ def clean_data_by_column(worksheet, stg_table_field, input_column_position, int_
 
     return raw_data
 
-
 def convert_csv_to_xlsx(file):
     f = open(file, encoding='utf-8-sig')
     csv.register_dialect('colons', delimiter=',')
@@ -86,13 +86,13 @@ def unify_input_file_ext(file):
         ctypes.windll.user32.MessageBoxW(0, 'file_extention is not acceptable', "Error", 1)
 
 
-def log_exception(error_dict, input_column_position, fields_categories, fw, worksheet, today):
+def log_exception(error_dict, input_column_position, fields_categories, fw, worksheet, today, error_log_file_path, sheet_name):
     # print out exception report
     if error_dict == {}:
         pass
     else:
         exception_log = openpyxl.Workbook()
-        exception_ws = exception_log.create_sheet(r'Forwarder_List')
+        exception_ws = exception_log.create_sheet(sheet_name)
         del exception_log['Sheet']
 
         for col_name in input_column_position.keys():
@@ -123,9 +123,8 @@ def log_exception(error_dict, input_column_position, fields_categories, fw, work
                 except:
                     pass
 
-        exception_log.save(r'C:\Users\ychen\Desktop\Testing\fw_daily_report_error_{}_{}.xlsx'.format(fw, today))
+        exception_log.save(error_log_file_path + r'fw_daily_report_error_{}_{}.xlsx'.format(fw, today))
         ctypes.windll.user32.MessageBoxW(0, "{} daily report cleaned with errors".format(fw), "Error", 1)
-        return worksheet
 
 
 def read_header_name_n_position(worksheet):
@@ -151,15 +150,20 @@ def clean_report(file_name, fw, fields_categories, sheet_name):
     Column_Cleaning.error_dict = {}
     raw_data = clean_data_by_column(worksheet=worksheet, input_column_position=input_column_position,
                                     **fields_categories)
-    log_exception(error_dict = Column_Cleaning.error_dict, input_column_position = input_column_position, fields_categories = fields_categories, fw = fw, worksheet = worksheet, today = today)
+    log_exception(error_dict = Column_Cleaning.error_dict, sheet_name = sheet_name, input_column_position = input_column_position, fields_categories = fields_categories, fw = fw, worksheet = worksheet, today = today, **kwargs)
     return raw_data
 
 
-def truncate_n_update_tb(db, tb, raw_data, upload_sql):
-    con = psycopg2.connect(db)
-    cur = con.cursor()
-    cur.execute("truncate table {}".format(tb))
-    sql = upload_sql.format(tb)
-    cur.execute(sql, raw_data)
-    con.commit()
-    con.close()
+def get_latest_file(input_file, *args, **kwargs):
+    input_file_name = max(glob.iglob(input_file), key=os.path.getctime)
+    return input_file_name
+
+
+def copy_file_without_last_line_csv(input_file, clean_file, *args, **kwargs):
+    input_file_name = get_latest_file(input_file)
+    f = open(input_file_name, encoding='utf-8')
+    lines = f.readlines()
+    lines = lines[:-1]
+    f.close()
+    with open(clean_file, 'w', encoding='utf-8') as nf:
+        nf.writelines(lines)
