@@ -2,6 +2,8 @@ import csv
 import psycopg2
 import win32com.client
 
+from Report_Cleaning import get_latest_file
+
 def truncate_n_update_tb(db, tb, raw_data, upload_sql):
     con = psycopg2.connect(db)
     cur = con.cursor()
@@ -11,10 +13,10 @@ def truncate_n_update_tb(db, tb, raw_data, upload_sql):
     con.commit()
     con.close()
 
-def truncate_n_upload_tb_fr_csv(db,sql_copy, tb, clean_file, sql_insert):
+def truncate_n_upload_tb_fr_csv(db,sql_copy, tb, clean_file, sql_insert, **kwargs):
     con = psycopg2.connect(db)
     cur = con.cursor()
-    cur.execute("truncate table {}".format(sql_stg))
+    cur.execute("truncate table {}".format(tb))
     sql = sql_copy.format(tb)
     nf = open(clean_file,'r',encoding = 'utf-8')
     cur.copy_expert(sql, nf)
@@ -25,7 +27,7 @@ def truncate_n_upload_tb_fr_csv(db,sql_copy, tb, clean_file, sql_insert):
 
 def fetch_n_write_csv(db, sql, tb_tempt):
     #store lookup table queried from database in a temporary table under tb_tempt path
-    con = psycopg2.connect(db=db)
+    con = psycopg2.connect(db)
     cur = con.cursor()
     cur.execute(sql)
     mylist = cur.fetchall()
