@@ -18,7 +18,7 @@ def append_cleaned_columns(obj, column_data, worksheet, raw_data):
 
 # construct a list of tuples; tuple contains rows of data in order of the columns in stg_table in database (stg_table_field)
 
-def clean_data_by_column(worksheet, stg_table_field, input_column_position, int_column, date_column,
+def clean_data_by_column(file_name, worksheet, stg_table_field, input_column_position, int_column, date_column,
                          compulsory_field_name, key_fields):
     raw_data = []
     for field_name in stg_table_field:
@@ -52,6 +52,11 @@ def clean_data_by_column(worksheet, stg_table_field, input_column_position, int_
         elif field_name in compulsory_field_name:
             ctypes.windll.user32.MessageBoxW(0, "Missing [" + field_name + "] Column!", "ERROR", 1)
             exit()
+        elif field_name == 'source':
+            for row in range(2, worksheet.max_row + 1):
+                cell_value = file_name
+                column_data.append(cell_value)
+            raw_data.append(column_data)
         else:
             raw_data.append([])
 
@@ -78,15 +83,17 @@ def convert_csv_to_xlsx(file):
 
 def unify_input_file_ext(file):
     if file.lower().endswith('.csv'):
-        file = convert_csv_to_xlsx(file)
-        return file
+        dest_filename = convert_csv_to_xlsx(file)
+        return dest_filename
     elif file.lower().endswith('.xlsx'):
+        return file
+    elif file.lower().endswith('.xlsm'):
         return file
     else:
         ctypes.windll.user32.MessageBoxW(0, 'file_extention is not acceptable', "Error", 1)
 
 
-def log_exception(error_dict, input_column_position, fields_categories, fw, worksheet, today, error_log_file_path, sheet_name):
+def log_exception(error_dict, input_column_position, fields_categories, fw, worksheet, today, error_log_file_path, sheet_name, **kwargs):
     # print out exception report
     if error_dict == {}:
         pass
@@ -123,7 +130,7 @@ def log_exception(error_dict, input_column_position, fields_categories, fw, work
                 except:
                     pass
 
-        exception_log.save(error_log_file_path + r'fw_daily_report_error_{}_{}.xlsx'.format(fw, today))
+        exception_log.save(error_log_file_path + r'\daily_report_error_{fw}_{today}.xlsx'.format(fw =fw , today = today))
         ctypes.windll.user32.MessageBoxW(0, "{} daily report cleaned with errors".format(fw), "Error", 1)
 
 
@@ -141,14 +148,14 @@ def read_header_name_n_position(worksheet):
     return input_column_position
 
 
-def clean_report(file_name, fw, fields_categories, sheet_name):
+def clean_report(file_name, fw, fields_categories, sheet_name, **kwargs):
     unify_input_file_ext(file_name)
     workbook = openpyxl.load_workbook(file_name, data_only=True)
     worksheet = workbook[sheet_name]
     input_column_position = read_header_name_n_position(worksheet)
     today = datetime.date.today()
     Column_Cleaning.error_dict = {}
-    raw_data = clean_data_by_column(worksheet=worksheet, input_column_position=input_column_position,
+    raw_data = clean_data_by_column(worksheet=worksheet, input_column_position=input_column_position, file_name = file_name,
                                     **fields_categories)
     log_exception(error_dict = Column_Cleaning.error_dict, sheet_name = sheet_name, input_column_position = input_column_position, fields_categories = fields_categories, fw = fw, worksheet = worksheet, today = today, **kwargs)
     return raw_data

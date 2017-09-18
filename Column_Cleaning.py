@@ -35,7 +35,10 @@ class DateColumn(XlColumn):
                 return data
             else:
                  try:
-                     data = from_excel(cell.internal_value, cell.base_date)
+                     if isinstance(cell.internal_value, str):
+                         data = datetime.datetime.strptime(cell.internal_value, "%m/%d/%Y").date()
+                     else:
+                         data = from_excel(cell.internal_value, cell.base_date)
                  except:
                      data = None
                      try:
@@ -109,7 +112,7 @@ class IntColumn(XlColumn):
             else:
                 while True:
                     try:
-                        data = int(str(cell.internal_value).replace('_x000D_', '').strip())
+                        data = int(float(str(cell.internal_value).replace('_x000D_', '').strip()))
                     except:
                         data = None
                         try:

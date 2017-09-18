@@ -4,7 +4,7 @@ import win32com.client
 
 from Report_Cleaning import get_latest_file
 
-def truncate_n_update_tb(db, tb, raw_data, upload_sql):
+def truncate_n_update_tb(db, tb, raw_data, upload_sql, **kwargs):
     con = psycopg2.connect(db)
     cur = con.cursor()
     cur.execute("truncate table {}".format(tb))
@@ -13,7 +13,7 @@ def truncate_n_update_tb(db, tb, raw_data, upload_sql):
     con.commit()
     con.close()
 
-def truncate_n_upload_tb_fr_csv(db,sql_copy, tb, clean_file, sql_insert, **kwargs):
+def truncate_n_upload_tb_fr_csv(db, sql_copy, tb, clean_file, sql_insert, **kwargs):
     con = psycopg2.connect(db)
     cur = con.cursor()
     cur.execute("truncate table {}".format(tb))
@@ -25,7 +25,7 @@ def truncate_n_upload_tb_fr_csv(db,sql_copy, tb, clean_file, sql_insert, **kwarg
     con.commit()
     con.close()
 
-def fetch_n_write_csv(db, sql, tb_tempt):
+def fetch_n_write_csv(db, sql, tb_tempt, **kwargs):
     #store lookup table queried from database in a temporary table under tb_tempt path
     con = psycopg2.connect(db)
     cur = con.cursor()
@@ -41,7 +41,7 @@ def fetch_n_write_csv(db, sql, tb_tempt):
     con.commit()
 
 
-def trigger_update_macro(file_name, macro_to_run):
+def trigger_update_macro(file_name, macro_to_run, **kwargs):
     xl = win32com.client.Dispatch("Excel.Application")
     xl.Visible = True
     wb = xl.Workbooks.Open(get_latest_file(file_name))
